@@ -160,8 +160,8 @@ def main():
             with st.spinner("Processing..."):
                 # Inference
                 input_tensor = preprocess_image(img_np)
-                    output, _ = model(input_tensor)
-                    mask = output.cpu().numpy()[0, 0]
+                output, _ = model(input_tensor)
+                mask = output.cpu().numpy()[0, 0]
                 
                 # Post-process mask
                 mask = cv2.resize(mask, (img_np.shape[1], img_np.shape[0]))
