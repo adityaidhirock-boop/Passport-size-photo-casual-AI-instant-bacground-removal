@@ -1,12 +1,8 @@
 import streamlit as st
-import torch.nn as nn
-import torch.nn.functional as F
-import torchvision.models as models
 import numpy as np
 from PIL import Image
 import cv2
 import albumentations as A
-from albumentations.pytorch import ToTensorV2
 import os
 import io
 import gc
@@ -89,14 +85,10 @@ class HybridU2Net(nn.Module):
         input_size = x.shape[2:]
         enc_features = self.encoder(x)
         dec4 = self.dec4(enc_features[4])
-        dec4_skip = torch.cat((dec4, enc_features[3]), dim=1)
         dec3 = self.dec3(dec4_skip)
-        dec3_skip = torch.cat((dec3, enc_features[2]), dim=1)
         dec2 = self.dec2(dec3_skip)
-        dec2_skip = torch.cat((dec2, enc_features[1]), dim=1)
         dec1 = self.dec1(dec2_skip)
         dec1_up = F.interpolate(dec1, size=enc_features[0].shape[2:], mode='bilinear', align_corners=False)
-        dec1_skip = torch.cat((dec1_up, enc_features[0]), dim=1)
         main_output = self.final_conv(dec1_skip)
         return F.interpolate(main_output, size=input_size, mode='bilinear', align_corners=False), None
 
@@ -121,7 +113,6 @@ def load_ai_model(model_path):
         return None, f"Model file '{model_path}' not found."
     try:
         model = HybridU2Net(encoder_name='resnet34', pretrained=False)
-        checkpoint = torch.load(model_path, map_location=torch.device('cpu'))
         state_dict = checkpoint.get('model_state_dict', checkpoint.get('state_dict', checkpoint))
         model.load_state_dict(state_dict, strict=False)
         model.eval()
@@ -169,7 +160,6 @@ def main():
             with st.spinner("Processing..."):
                 # Inference
                 input_tensor = preprocess_image(img_np)
-                with torch.no_grad():
                     output, _ = model(input_tensor)
                     mask = output.cpu().numpy()[0, 0]
                 
